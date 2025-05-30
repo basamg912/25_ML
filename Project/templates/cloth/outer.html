@@ -16,16 +16,17 @@
 
         {% if items %}
             <div class="row">
-                {% for fname in items %}
+                {% for it in items %}
                     <div class="col-3 mb-4">
                         <div class="card">
-                            <img src="{{ url_for('static', filename='uploads/' + fname) }}" class="card-img-top" alt="{{ fname }}">
+                            <img src="{{ url_for('static', filename='uploads/' + it['filename']) }}" class="card-img-top" alt="{{ it['filename'] }}">
                             <div class="card-body text-center">
-                                <p class="card-text">{{ fname }}</p>
+                                <p class="card-text">파일명: {{ it['filename'] }}</p>
+                                <p class="card-text">세부 카테고리: {{ it['raw'] }}</p>
                                 <form method="post" action="{{ url_for('index') }}">
-                                    <!-- 이 부분을 추가 -->
                                     <input type="hidden" name="old_page" value="outer">
-                                    <input type="hidden" name="filename" value="{{ fname }}">
+                                    <input type="hidden" name="raw" value="{{it['raw']}}">
+                                    <input type="hidden" name="filename" value="{{ it['filename'] }}">
                                     <select name="category_override" class="form-select mb-2">
                                         <option value="bottom">bottom</option>
                                         <option value="top">top</option>
@@ -46,3 +47,4 @@
     </div>
 </body>
 </html>
+

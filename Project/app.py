@@ -48,7 +48,7 @@ def index():
             raw_category = classify_clothes(fp, cls_model)
             page = PAGE_MAP.get(raw_category)
             if page in category_items:
-                category_items[page].append(f.filename)
+                category_items[page].append({"filename":f.filename,"raw":raw_category})
                 return render_template('index.html',redirect_to=page)
             else:
                 return redirect(url_for('index'))
@@ -58,13 +58,16 @@ def index():
             filename = request.form['filename']
             old_page = request.form['old_page']
             new_page = request.form['category_override']
+            raw = request.form['raw']
 
             # 기존 카테고리에서 제거
-            if old_page in category_items and filename in category_items[old_page]:
-                category_items[old_page].remove(filename)
+            category_items[old_page] = [
+                it for it in category_items[old_page]
+                if it['filename'] != filename
+            ]
             # 새 카테고리에 추가
-            if new_page in category_items:
-                category_items[new_page].append(filename)
+            raw = request.form.get('raw', filename.split('.')[0])  # 대체 로직
+            category_items[new_page].append({'filename': filename, 'raw': raw})
 
             # 수정 완료 팝업 & 새 페이지로 이동
             return redirect(url_for(new_page, corrected='1'))
@@ -73,7 +76,7 @@ def index():
 
 @app.route('/closet')
 def closet():
-    return render_template('closet.html', clothes=clothes_list)
+    return render_template('closet.html', clothes=category_items)
 
 @app.route('/top')
 def top():
