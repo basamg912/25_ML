@@ -47,26 +47,27 @@ def index():
             f.save(fp)
             raw_category = classify_clothes(fp, cls_model)
             page = PAGE_MAP.get(raw_category)
-            print(raw_category)
-            print(cls_model.model.names)
             if page in category_items:
                 category_items[page].append(f.filename)
-                return redirect(url_for(page),'index')
+                return render_template('index.html',redirect_to=page)
             else:
                 return redirect(url_for('index'))
         
         # 수동 수정 처리
         if 'category_override' in request.form:
             filename = request.form['filename']
-            category = request.form['category_override']
-            outfit = {"top":"티셔츠.jpg","bottom":"청바지.jpg"}
-            return render_template(
-                'index.html',
-                filename=filename,
-                category=category,
-                outfit=outfit,
-                corrected=True
-            )
+            old_page = request.form['old_page']
+            new_page = request.form['category_override']
+
+            # 기존 카테고리에서 제거
+            if old_page in category_items and filename in category_items[old_page]:
+                category_items[old_page].remove(filename)
+            # 새 카테고리에 추가
+            if new_page in category_items:
+                category_items[new_page].append(filename)
+
+            # 수정 완료 팝업 & 새 페이지로 이동
+            return redirect(url_for(new_page, corrected='1'))
 
     return render_template('index.html')
 

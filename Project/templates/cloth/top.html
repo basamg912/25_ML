@@ -9,6 +9,12 @@
 <body class="bg-light">
     <div class="container py-5">
         <h1 class="mb-4 text-primary">상의 카테고리</h1>
+
+        <!-- 수정 완료 팝업 -->
+        {% if request.args.get('corrected') == '1' %}
+        <script>alert("수정 완료");</script>
+        {% endif %}
+
         {% if items %}
             <div class="row">
                 {% for fname in items %}
@@ -18,10 +24,11 @@
                             <div class="card-body text-center">
                                 <p class="card-text">{{ fname }}</p>
                                 <form method="post" action="{{ url_for('index') }}">
+                                    <input type="hidden" name="old_page" value="top">
                                     <input type="hidden" name="filename" value="{{ fname }}">
                                     <select name="category_override" class="form-select mb-2">
-                                        <option value="bottom" selected>bottom</option>
-                                        <option value="top">top</option>
+                                        <option value="bottom">bottom</option>
+                                        <option value="top" selected>top</option>
                                         <option value="outer">outer</option>
                                         <option value="shoe">shoe</option>
                                     </select>
@@ -39,3 +46,4 @@
     </div>
 </body>
 </html>
+
