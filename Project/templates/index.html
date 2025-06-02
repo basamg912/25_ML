@@ -22,18 +22,42 @@
                 <button class="btn btn-success" type="submit">업로드</button>
             </div>
         </form>
-
+        <!-- RETRY 받으면 -->
+        {% if show_retry %}
+        <div class = "alert alert-warning">
+            물체를 인식하지 못했습니다. 다른 각도에서 사진을 다시 찍어주세요.
+        </div>
+        {% endif%}
         {% if redirect_to %}
             <script>
                 showUploadSuccessPopup();
                 window.location.href = "{{ url_for(redirect_to) }}";
             </script>
         {% endif %}
-
         {% if corrected %}
             <script>showAdjustSuccessPopup();</script>
         {% endif %}
-
+        {% if outfit %}
+        <div class= "card mb-4" style = "max-width: 400px">
+            <div class="row g-0">
+                <div class="col-6">
+                    <img src="{{ url_for('static', filename='uploads/' + outfit.top) }}"
+                         class="img-fluid rounded-start" alt="추천 상의">
+                </div>
+                <div class="col-6">
+                    <img src="{{ url_for('static', filename='uploads/' + outfit.bottom) }}"
+                        class="img-fluid rounded-end" alt="추천 하의">
+                </div>
+            </div>
+            <div class="card-body">
+                <h5 class="card-title">추천 코디</h5>
+                <p class="card-text">
+                    상의: {{ outfit.top }}<br>
+                    하의: {{ outfit.bottom }}
+                </p>
+            </div>
+        </div>
+        {% endif %}
         <a href="/closet" class="btn btn-outline-primary mb-3">옷장 보기</a>
     </div>
 </body>

@@ -34,6 +34,11 @@
                                     </select>
                                     <button type="submit" class="btn btn-primary btn-sm">수정</button>
                                 </form>
+                                <form method ="post" action="{{ url_for('bottom')}}">
+                                    <input type="hidden" name = "delete_filename" value="{{it['filename']}}">
+                                    <input type="hidden" name = "delete_category" value="bottom">
+                                    <button type ="submit" class="btn btn-danger btn-sm">삭제</button>
+                                </form>
                             </div>
                         </div>
                     </div>
@@ -44,6 +49,7 @@
         {% endif %}
 
         <a href="/" class="btn btn-outline-primary mt-4">홈으로 돌아가기</a>
+        <a href="/closet" class="btn btn-outline-primary mt-4">이전으로 돌아가기</a>
     </div>
 </body>
 </html>

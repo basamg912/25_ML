@@ -35,6 +35,11 @@
                                     </select>
                                     <button type="submit" class="btn btn-primary btn-sm">수정</button>
                                 </form>
+                                <form method ="post" action="{{ url_for('outer')}}">
+                                    <input type="hidden" name = "delete_filename" value="{{it['filename']}}">
+                                    <input type="hidden" name = "delete_category" value="outer">
+                                    <button type ="submit" class="btn btn-danger btn-sm">삭제</button>
+                                </form>
                             </div>
                         </div>
                     </div>
@@ -44,6 +49,7 @@
             <p>등록된 아우터 아이템이 없습니다.</p>
         {% endif %}
         <a href="/" class="btn btn-outline-primary mt-4">홈으로 돌아가기</a>
+        <a href="/closet" class="btn btn-outline-primary mt-4">이전으로 돌아가기</a>
     </div>
 </body>
 </html>
