@@ -93,18 +93,21 @@ def recommend():
     bottom = [it['filename'] for it in category_items['bottom']]
     shoe = [it['filename'] for it in category_items['shoe']]
     outer = [it['filename'] for it in category_items['outer']]
-    # 여기서 코드 추천 프로그램으로 top_img, bottom_img, shoe_img 계산해서 넘겨주면 된다.
+    # 여기서 코디 추천 프로그램으로 top_img, bottom_img, shoe_img 계산해서 넘겨주면 된다.
     print(top)
     if not top or not bottom:
         return render_template('recommend.html', top = None, bottom= None, shoe=None, outer=None)
     top_img = top[0]
     bottom_img = bottom[0]
-    shoe_img = shoe[0]
-    if outer:
-        outer_img = outer[0] # 만약 날씨가 춥다면 outer 까지 출력
-        return render_template('recommend.html', top=top_img, bottom= bottom_img, shoe=shoe_img, outer = outer_img)
+    if shoe:
+        shoe_img = shoe[0]    
+        if outer:
+            outer_img = outer[0] # 만약 날씨가 춥다면 outer 까지 출력
+            return render_template('recommend.html', top=top_img, bottom= bottom_img, shoe=shoe_img, outer = outer_img)
+        else:
+            return render_template('recommend.html', top=top_img, bottom= bottom_img, shoe=shoe_img)
     else:
-        return render_template('recommend.html', top=top_img, bottom= bottom_img, shoe=shoe_img, outer = None)
+        return render_template('recommend.html', top=top_img, bottom= bottom_img, shoe=None, outer = None)
 @app.route('/top', methods=['GET','POST'])
 def top():
     if request.method == "POST" and 'delete_filename' in request.form:

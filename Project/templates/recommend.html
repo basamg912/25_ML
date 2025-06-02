@@ -9,7 +9,7 @@
   <div class="container py-5">
     <h1 class="mb-4 text-primary">추천 코디</h1>
 
-    {% if top and bottom and shoe%}
+    {% if top and bottom%}
       <div class="card mb-3" style="max-width:400px">
         <div class="row g-0">
           <div class="col-6">
@@ -18,10 +18,13 @@
           <div class="col-6">
             <img src="{{ url_for('static', filename='uploads/' + bottom) }}" class="img-fluid rounded-end" alt="추천 하의">
           </div>
-          <div class="col-6">
-            <img src="{{ url_for('static', filename='uploads/' + shoe) }}" class="img-fluid rounded-end" alt="추천 신발">
-          </div>
         </div>
+        {% if shoe %}
+            <div class="col-6">
+            <img src="{{ url_for('static', filename='uploads/' + shoe) }}" class="img-fluid rounded-end" alt="추천 신발">
+            </div>
+        {% endif %}
+
         {% if outer %}
             <div class="row g-0">
             <div class="col-6">
@@ -33,7 +36,12 @@
           <p class="card-text">
             상의: {{ top }}<br>
             하의: {{ bottom }} <br>
-            신발: {{ shoe}}
+            {% if shoe %}
+                신발 : {{shoe}} <br>
+            {% endif %}
+            {% if outer %}
+                아우터 : {{outer }}
+            {% endif %}
           </p>
         </div>
       </div>
