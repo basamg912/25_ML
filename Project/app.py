@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for
 import os
 import re
 from dummy_model import classify_clothes
+import weather_fetch # main 함수 실행시 weather csv 파일 생성 및, return csv 파일명
 
 from ultralytics import YOLO
 app = Flask(__name__)
