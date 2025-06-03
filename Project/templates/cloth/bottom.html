@@ -12,7 +12,6 @@
         {% if request.args.get('corrected') == '1' %}
         <script>alert("수정 완료");</script>
         {% endif %}
-
         {% if items %}
             <div class="row">
                 {% for it in items %}
@@ -22,15 +21,33 @@
                             <div class="card-body text-center">
                                 <p class="card-text">파일명: {{ it['filename'] }}</p>
                                 <p class="card-text">세부 카테고리: {{ it['raw'] }}</p>
+                                <p class="card-text">색상: {{it['color'] }} </p>
                                 <form method="post" action="{{ url_for('index') }}">
                                     <input type="hidden" name="old_page" value="bottom">
                                     <input type="hidden" name="raw" value="{{it['raw']}}">
                                     <input type="hidden" name="filename" value="{{ it['filename'] }}">
                                     <select name="category_override" class="form-select mb-2">
+                                        <option disabled selected>카테고리 선택</option>
                                         <option value="bottom" selected>bottom</option>
                                         <option value="top">top</option>
                                         <option value="outer">outer</option>
                                         <option value="shoe">shoe</option>
+                                    </select>
+                                    <input type ="hidden" name ="old_color" value="{{it['color']}}">
+                                    <select name="color_override" class="form-select mb-2">
+                                        <option disabled selected>색상 선택</option>
+                                        <option value="white">white</option>
+                                        <option value="gray">gray</option>
+                                        <option value="black">black</option>
+                                        <option value="navy">navy</option>
+                                        <option value="blue">blue</option>
+                                        <option value="skyblue">skyblue</option>
+                                        <option value="beige">beige</option>
+                                        <option value="pink">pink</option>
+                                        <option value="green">green</option>
+                                        <option value="yellow">yellow</option>
+                                        <option value="brown">brown</option>
+                                        <option value="khaki">khaki</option>
                                     </select>
                                     <button type="submit" class="btn btn-primary btn-sm">수정</button>
                                 </form>

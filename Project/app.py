@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for
 import os
 import re
-from dummy_model import classify_clothes
+from dummy_model import classify_clothes, detect_color
 import weather_fetch # main 함수 실행시 weather csv 파일 생성 및, return csv 파일명
 
 from ultralytics import YOLO
@@ -22,15 +22,10 @@ PAGE_MAP = {
 }
 
 cls_model = YOLO("/Users/basamg/KW_2025/ML/fine_tune_yolo.pt")
-    
 
 UPLOAD_FOLDER = 'static/uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-clothes_list = [
-    {"filename" : "top1.jpg", "category" : "상의"},
-    {"filename" : "pants1.jpg", "category" : "하의"},
-]
 
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
@@ -38,6 +33,7 @@ if not os.path.exists(UPLOAD_FOLDER):
 # 페이지별 저장된 파일 리스트
 category_items = {'top': [], 'bottom': [], 'outer': [], 'shoe': []}
 
+clothes_list = []
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
@@ -46,12 +42,17 @@ def index():
             f = request.files['file']
             fp = os.path.join(app.config['UPLOAD_FOLDER'], f.filename)
             f.save(fp)
-            raw_category = classify_clothes(fp, cls_model)
+            crop, raw_category = classify_clothes(fp, cls_model)
+            crop.save(f"static/uploads/{f.filename}")
+            color = detect_color(crop)
+            cloth = {'filepath':fp,'category':raw_category,'color':color}
+            clothes_list.append(cloth)
             if raw_category =='unknown':
                 return render_template('index.html', show_retry=True)    
             page = PAGE_MAP.get(raw_category)
+            
             if page in category_items:
-                category_items[page].append({"filename":f.filename,"raw":raw_category})
+                category_items[page].append({"filename":f.filename,"raw":raw_category,"color":color})
                 #outfit 추천해주는 모델로 상하의 추천해주기
                 outfit = {
                     "top" : "recommend Top . jpg",
@@ -68,8 +69,9 @@ def index():
             filename = request.form['filename']
             old_page = request.form['old_page']
             new_page = request.form['category_override']
+            old_color = request.form['old_color']
             raw = request.form['raw']
-
+            color = request.form['color_override']
             # 기존 카테고리에서 제거
             category_items[old_page] = [
                 it for it in category_items[old_page]
@@ -77,8 +79,10 @@ def index():
             ]
             # 새 카테고리에 추가
             raw = request.form.get('raw', filename.split('.')[0])  # 대체 로직
-            category_items[new_page].append({'filename': filename, 'raw': raw})
-
+            new_item = {"filename": filename, "raw":raw,"color":old_color}
+            if color:
+                new_item['color'] = color
+            category_items[new_page].append(new_item)
             # 수정 완료 팝업 & 새 페이지로 이동
             return redirect(url_for(new_page, corrected='1'))
 

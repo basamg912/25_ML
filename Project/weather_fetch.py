@@ -23,7 +23,7 @@ from dotenv import load_dotenv
 
 # ────────────────────────────────────────────────────────
 load_dotenv()
-raw_key = "add your api key"
+raw_key = "rYR0W%2F%2BXsbw084PGloDk61B2UOE6Sdd0eK%2B5kZmuLNiy1KEtlFoGnMA%2B%2BBOlaHx%2BOrw%2BTfqgC5Ju8pHnyet5Cg%3D%3D"
 if not raw_key:
     raise RuntimeError("환경변수 KMA_SERVICE_KEY가 설정되지 않았습니다.")
 SERVICE_KEY = urllib.parse.unquote_plus(raw_key)
