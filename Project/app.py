@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for
 import os
 import re
-from dummy_model import classify_clothes, detect_color
+from dummy_model import classify_clothes, detect_color, make_model, recommend_cody
 import weather_fetch # main 함수 실행시 weather csv 파일 생성 및, return csv 파일명
 
 from ultralytics import YOLO
@@ -22,6 +22,7 @@ PAGE_MAP = {
 }
 
 cls_model = YOLO("/Users/basamg/KW_2025/ML/fine_tune_yolo.pt")
+recommend_model = make_model('/Users/basamg/KW_2025/ML/Project/cody_recommend(second_train).pth')
 
 UPLOAD_FOLDER = 'static/uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -42,27 +43,32 @@ def index():
             f = request.files['file']
             fp = os.path.join(app.config['UPLOAD_FOLDER'], f.filename)
             f.save(fp)
-            crop, raw_category = classify_clothes(fp, cls_model)
-            crop.save(f"static/uploads/{f.filename}")
-            color = detect_color(crop)
-            cloth = {'filepath':fp,'category':raw_category,'color':color}
-            clothes_list.append(cloth)
-            if raw_category =='unknown':
-                return render_template('index.html', show_retry=True)    
-            page = PAGE_MAP.get(raw_category)
-            
-            if page in category_items:
-                category_items[page].append({"filename":f.filename,"raw":raw_category,"color":color})
-                #outfit 추천해주는 모델로 상하의 추천해주기
-                outfit = {
-                    "top" : "recommend Top . jpg",
-                    "bottom" : "reccomend Bottomg . jpg",
-                    "shoe" : "recommend shoe"
-                }
-                return render_template('index.html',redirect_to=page, outfit = outfit)
-            else:
-                return redirect(url_for('index'))
+            detections = classify_clothes(fp, cls_model)
+            if not detections:
+                return render_template('index.html', show_retry=True)  
+            for idx, (crop, raw_category) in enumerate(detections):
+                crop_filename = f"{os.path.splitext(f.filename)[0]}_{idx+1}{os.path.splitext(f.filename)[1]}"
+                crop_path = os.path.join(app.config['UPLOAD_FOLDER'], crop_filename)
+                crop.save(crop_path)    
+                color = detect_color(crop)
+                cloth = {'filepath':crop_path,'category':raw_category,'color':color}
+                clothes_list.append(cloth)
                 
+                page = PAGE_MAP.get(raw_category)    
+                if page in category_items:
+                    category_items[page].append({"filename":crop_filename,"raw":raw_category,"color":color})
+            
+            
+            first_cat = detections[0][1] #첫번째 인식에서의 카테고리로 이동
+            first_page = PAGE_MAP.get(first_cat)            
+            outfit = {
+                "top" : "recommend Top . jpg",
+                "bottom" : "reccomend Bottomg . jpg",
+                "shoe" : "recommend shoe"
+            }
+            return render_template('index.html',redirect_to=first_page, outfit = outfit)
+        else:
+            return redirect(url_for('index'))
         
         # 수동 수정 처리
         if 'category_override' in request.form:
@@ -71,7 +77,9 @@ def index():
             new_page = request.form['category_override']
             old_color = request.form['old_color']
             raw = request.form['raw']
-            color = request.form['color_override']
+            color = None
+            if 'color_override' in request.form:
+                color = request.form['color_override']
             # 기존 카테고리에서 제거
             category_items[old_page] = [
                 it for it in category_items[old_page]
@@ -99,20 +107,22 @@ def recommend():
     shoe = [it['filename'] for it in category_items['shoe']]
     outer = [it['filename'] for it in category_items['outer']]
     # 여기서 코디 추천 프로그램으로 top_img, bottom_img, shoe_img 계산해서 넘겨주면 된다.
-    print(top)
+    score, cody_top, cody_bottom = recommend_cody(top,bottom,recommend_model)
+    print(cody_top, cody_bottom)
     if not top or not bottom:
         return render_template('recommend.html', top = None, bottom= None, shoe=None, outer=None)
-    top_img = top[0]
-    bottom_img = bottom[0]
+    top_img = cody_top
+    bottom_img = cody_bottom
+    score = int(score*10)
     if shoe:
         shoe_img = shoe[0]    
         if outer:
             outer_img = outer[0] # 만약 날씨가 춥다면 outer 까지 출력
-            return render_template('recommend.html', top=top_img, bottom= bottom_img, shoe=shoe_img, outer = outer_img)
+            return render_template('recommend.html', top=top_img, bottom= bottom_img, shoe=shoe_img, outer = outer_img, score = score)
         else:
-            return render_template('recommend.html', top=top_img, bottom= bottom_img, shoe=shoe_img)
+            return render_template('recommend.html', top=top_img, bottom= bottom_img, shoe=shoe_img, outer = None, score =score)
     else:
-        return render_template('recommend.html', top=top_img, bottom= bottom_img, shoe=None, outer = None)
+        return render_template('recommend.html', top=top_img, bottom= bottom_img, shoe=None, outer = None, score=score)
 @app.route('/top', methods=['GET','POST'])
 def top():
     if request.method == "POST" and 'delete_filename' in request.form:

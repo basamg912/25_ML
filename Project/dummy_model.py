@@ -1,7 +1,74 @@
 from PIL import Image, ImageOps
 import numpy as np
 import colorsys
+import torch
+import torch.nn as nn
+from torchvision import transforms
+from torchvision.models import resnet
+from torchvision.models import resnet50, ResNet50_Weights
 
+
+class ResNetEmbedder(nn.Module):
+    def __init__(self):
+        super().__init__()
+        weights = ResNet50_Weights.DEFAULT
+        resnet = resnet50(weights=weights)
+        self.backbone = nn.Sequential(*list(resnet.children())[:-1])  # Remove FC layer
+
+    def forward(self, x):
+        x = self.backbone(x)  # Output shape: (B, 2048, 1, 1)
+        return x.view(x.size(0), -1)  # Flatten to (B, 2048)
+        # x.size(0) 은 Batch 사이즈는 유지하면서 자동으로 남은 (1,1) flatten 된 차원을 뜻하는 -1. → 을 삭제한다.
+
+
+class ImageRelationClassifier(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.resnet = ResNetEmbedder()
+        self.classifier = nn.Sequential(
+            nn.Linear(4096, 2048),
+            nn.ReLU(),
+            nn.Linear(2048,512),
+            nn.ReLU(),
+            nn.Linear(512,256),
+            nn.ReLU(),
+            nn.Linear(256, 2)
+        )
+
+    def forward(self, img1, img2):
+        emb1 = self.resnet(img1)
+        emb2 = self.resnet(img2)
+        concat = torch.cat([emb1, emb2], dim=1) # concat 했으니깐 총 4096차원
+        return self.classifier(concat)
+
+# 코디 추천 모델 
+def make_model(model_weight):
+    model = ImageRelationClassifier()
+    model.load_state_dict(torch.load(model_weight))
+    return model
+
+def recommend_cody(top, bottom, model):
+    transform = transforms.Compose([
+        transforms.Resize((224,224)),
+        transforms.ToTensor()
+    ])
+    top_score = 0
+    cody_top = None
+    cody_bottom = None
+    for t in top:
+        for j in bottom:
+            img1 = Image.open(f"static/uploads/{t}")
+            img2 = Image.open(f"static/uploads/{j}")
+            tensor1 = transform(img1).unsqueeze(0)
+            tensor2 = transform(img2).unsqueeze(0)
+            score = model(tensor1, tensor2)[0].tolist()[1]
+            if score > top_score:
+                top_score = score
+                cody_top = t
+                cody_bottom = j
+    return top_score, cody_top, cody_bottom
+            
+            
 def classify_clothes(filepath,cls_model):
     pre_img = Image.open(filepath)
     pre_img = ImageOps.exif_transpose(pre_img)
@@ -11,18 +78,27 @@ def classify_clothes(filepath,cls_model):
         probs = res.probs.cpu().numpy()
         cls_id = int(probs.argmax)
         return res.names[cls_id]
-    if len(res.boxes.cls)>0:
-        xy = res.boxes.xyxy[0].tolist()
-        image = Image.open(filepath)
-        x1,y1,x2,y2 = map(int,xy)
-        cropped = pre_img.crop((x1,y1,x2,y2))
-        cls_names = cls_model.model.names
-        cls_name = cls_names[res.boxes.cls[0].item()]
-        print(cls_name)
-        return cropped,cls_name
-    else:
-        return "unknown"
+    detections=[]
+    seen = set()
     
+    if len(res.boxes.cls) !=0:
+        for i in range(len(res.boxes.cls)):
+            cls_names = cls_model.model.names
+            cls_name = cls_names[res.boxes.cls[i].item()]
+            if cls_name in seen:
+                continue
+            if res.boxes[i].conf > 0.5:
+                xy = res.boxes.xyxy[i].tolist()
+                image = Image.open(filepath)
+                x1,y1,x2,y2 = map(int,xy)
+                cropped = pre_img.crop((x1,y1,x2,y2))
+                detections.append((cropped,cls_name))
+                seen.add(cls_name)
+        return detections
+    else:
+        return []
+
+
 def detect_color(image):
     image = image.resize((100, 100))
     np_img = np.array(image)
