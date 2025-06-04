@@ -42,10 +42,10 @@ def index():
         if 'file' in request.files and request.files['file'].filename:
             f = request.files['file']
             fp = os.path.join(app.config['UPLOAD_FOLDER'], f.filename)
-            f.save(fp)
+            f.save(fp) 
             detections = classify_clothes(fp, cls_model)
             if not detections:
-                return render_template('index.html', show_retry=True)  
+                return render_template('index.html', show_retry=True) 
             for idx, (crop, raw_category) in enumerate(detections):
                 crop_filename = f"{os.path.splitext(f.filename)[0]}_{idx+1}{os.path.splitext(f.filename)[1]}"
                 crop_path = os.path.join(app.config['UPLOAD_FOLDER'], crop_filename)
@@ -67,11 +67,8 @@ def index():
                 "shoe" : "recommend shoe"
             }
             return render_template('index.html',redirect_to=first_page, outfit = outfit)
-        else:
-            return redirect(url_for('index'))
-        
         # 수동 수정 처리
-        if 'category_override' in request.form:
+        elif 'category_override' in request.form:
             filename = request.form['filename']
             old_page = request.form['old_page']
             new_page = request.form['category_override']
@@ -93,7 +90,8 @@ def index():
             category_items[new_page].append(new_item)
             # 수정 완료 팝업 & 새 페이지로 이동
             return redirect(url_for(new_page, corrected='1'))
-
+        else:
+            return redirect(url_for('index'))
     return render_template('index.html')
 
 @app.route('/closet', methods=['GET','POST'])
